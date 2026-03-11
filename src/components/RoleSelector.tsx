@@ -1,92 +1,123 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ROLE_CATEGORIES } from '@/types/resume';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, Check, DollarSign, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
 
 interface RoleSelectorProps {
   selectedRole: string | null;
   onSelect: (role: string) => void;
+  expectedSalary: string;
+  onSalaryChange: (val: string) => void;
 }
 
-const RoleSelector = ({ selectedRole, onSelect }: RoleSelectorProps) => {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+// Flatten all roles for suggestions
+const ALL_SUGGESTIONS = Object.values(ROLE_CATEGORIES).flat();
 
-  // Derive the active category, prioritizing the user's manual selection, then falling back to the selectedRole's category
-  const initialCategory = selectedRole 
-    ? Object.entries(ROLE_CATEGORIES).find(([_, roles]) => roles.includes(selectedRole as any))?.[0] || null
-    : null;
-    
-  const activeCategory = selectedCategory || initialCategory;
+const RoleSelector = ({ selectedRole, onSelect, expectedSalary, onSalaryChange }: RoleSelectorProps) => {
+  const [open, setOpen] = useState(false);
 
-  const handleCategoryChange = (val: string) => {
-    setSelectedCategory(val);
-  };
-
-  const handleRoleChange = (val: string) => {
-    onSelect(val);
-  };
+  const filteredSuggestions = useMemo(() => {
+    if (!selectedRole) return ALL_SUGGESTIONS;
+    return ALL_SUGGESTIONS.filter(s => 
+      s.toLowerCase().includes(selectedRole.toLowerCase())
+    ).slice(0, 8);
+  }, [selectedRole]);
 
   return (
-    <div className="w-full max-w-xl mx-auto space-y-4">
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Briefcase className="w-4 h-4 text-primary" />
-          <p className="text-sm font-semibold text-foreground">Select Target Role <span className="text-destructive">*</span></p>
+    <div className="w-full max-w-xl mx-auto space-y-6">
+      <div className="space-y-5">
+        <div className="space-y-2 relative">
+          <div className="flex items-center gap-2 mb-1">
+            <Briefcase className="w-4 h-4 text-primary" />
+            <p className="text-sm font-semibold text-foreground">Target Role <span className="text-destructive">*</span></p>
+          </div>
+          
+          <Popover open={open && !!selectedRole && selectedRole.length > 0} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <div className="relative">
+                <Input
+                  placeholder="e.g. Product Manager, Frontend Developer..."
+                  value={selectedRole || ''}
+                  onChange={(e) => {
+                    onSelect(e.target.value);
+                    if (e.target.value.length > 0) {
+                      setOpen(true);
+                    } else {
+                      setOpen(false);
+                    }
+                  }}
+                  className="w-full pl-9 h-11 border-primary/20 focus:border-primary transition-all shadow-sm"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent 
+              className="p-0 border-none shadow-none bg-transparent w-[var(--radix-popover-trigger-width)]" 
+              align="start"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <div className="mt-1 bg-popover border border-primary/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                <Command className="bg-transparent">
+                  <CommandList className="max-h-[250px]">
+                    <CommandGroup heading="Suggested Roles" className="p-2">
+                      {filteredSuggestions.map((suggestion) => (
+                        <CommandItem
+                          key={suggestion}
+                          value={suggestion}
+                          onSelect={() => {
+                            onSelect(suggestion);
+                            setOpen(false);
+                          }}
+                          className="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors"
+                        >
+                          <span className="text-sm">{suggestion}</span>
+                          <Check
+                            className={cn(
+                              "h-4 w-4 text-primary",
+                              selectedRole?.toLowerCase() === suggestion.toLowerCase() ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <p className="text-[10px] text-muted-foreground px-1 pl-9">
+            Type your role. We'll suggest common ones as you type.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">Choose the role you're applying for — this helps us score your resume accurately.</p>
-      </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 space-y-2">
-          <label className="text-xs font-medium text-foreground">Category</label>
-          <Select value={activeCategory || ''} onValueChange={handleCategoryChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Categories</SelectLabel>
-                {Object.keys(ROLE_CATEGORIES).map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex-1 space-y-2">
-          <label className="text-xs font-medium text-foreground">Role</label>
-          <Select 
-            value={selectedRole || ''} 
-            onValueChange={handleRoleChange}
-            disabled={!activeCategory}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder={activeCategory ? "Select a role" : "Select a category first"} />
-            </SelectTrigger>
-            <SelectContent>
-              {activeCategory && (
-                <SelectGroup>
-                  <SelectLabel>{activeCategory} Roles</SelectLabel>
-                  {ROLE_CATEGORIES[activeCategory as keyof typeof ROLE_CATEGORIES].map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              )}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <DollarSign className="w-4 h-4 text-primary" />
+            <p className="text-sm font-semibold text-foreground">Expected Salary (Optional)</p>
+          </div>
+          <div className="relative">
+            <Input 
+              placeholder="e.g. $120,000 or 15 LPA" 
+              value={expectedSalary}
+              onChange={(e) => onSalaryChange(e.target.value)}
+              className="w-full h-11 border-primary/10 focus:border-primary transition-all shadow-sm"
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground px-1">
+            Our AI will evaluate if this aligns with market standards for your level.
+          </p>
         </div>
       </div>
     </div>

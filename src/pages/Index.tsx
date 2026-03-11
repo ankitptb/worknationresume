@@ -11,6 +11,7 @@ import { FileText } from 'lucide-react';
 const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [expectedSalary, setExpectedSalary] = useState('');
   const navigate = useNavigate();
 
   const handleFileSelect = async (file: File) => {
@@ -32,12 +33,18 @@ const Index = () => {
         reader.readAsDataURL(file);
       });
 
+      console.log('Invoking parse-resume with:', {
+        targetRole: selectedRole,
+        expectedSalary: expectedSalary,
+      });
+
       const { data, error } = await supabase.functions.invoke('parse-resume', {
         body: {
           fileBase64: base64,
           fileName: file.name,
           fileType: file.type,
           targetRole: selectedRole,
+          expectedSalary: expectedSalary,
         },
       });
 
@@ -52,9 +59,10 @@ const Index = () => {
       }
 
       navigate('/results', { state: { analysis } });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Resume analysis error:', err);
-      toast.error(err?.message || 'Failed to analyze resume. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to analyze resume. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -79,7 +87,12 @@ const Index = () => {
           <ProcessingStatus isProcessing={isProcessing} />
         ) : (
           <div className="space-y-6">
-            <RoleSelector selectedRole={selectedRole} onSelect={setSelectedRole} />
+            <RoleSelector 
+              selectedRole={selectedRole} 
+              onSelect={setSelectedRole}
+              expectedSalary={expectedSalary}
+              onSalaryChange={setExpectedSalary}
+            />
             <FileUpload onFileSelect={handleFileSelect} isProcessing={isProcessing} />
           </div>
         )}

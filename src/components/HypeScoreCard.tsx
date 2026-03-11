@@ -22,7 +22,7 @@ const HypeScoreCard = ({ hypeScore }: HypeScoreCardProps) => {
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Flame className="w-5 h-5 text-destructive" />
-          Hype Score — {hypeScore.score}/100
+          Hype Level — {hypeScore.score}%
           <span className={`text-sm font-medium ${level.color}`}>{level.label}</span>
         </CardTitle>
       </CardHeader>

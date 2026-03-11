@@ -153,10 +153,28 @@ export interface SectionMiniScore {
   oneLineSummary: string;
 }
 
+export interface SalaryAnalysis {
+  marketMatch: string;
+  advice: string;
+  level: 'low' | 'good' | 'high';
+  marketWorth?: string;
+}
+
+export interface WordCloudItem {
+  text: string;
+  value: number;
+}
+
+export interface TrajectoryItem {
+  title: string;
+  description: string;
+}
+
 export interface ResumeAnalysis {
   isResume: boolean;
   totalScore: number;
   targetRole: string;
+  expectedSalary?: string;
   profileInfo: ProfileInfo;
   summary: SummarySection;
   experience: ExperienceSection;
@@ -172,6 +190,11 @@ export interface ResumeAnalysis {
   brandAdvice: BrandAdvice;
   hrLens: HRLens;
   sectionMiniScores: SectionMiniScore[];
+  salaryAnalysis: SalaryAnalysis;
+  wordCloud: WordCloudItem[];
+  actionability: { score: number; feedback: string };
+  careerPath: TrajectoryItem[];
+  roleAlignment: { score: number; feedback: string };
   rawText: string;
 }
 
